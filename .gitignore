@@ -1,0 +1,10 @@
+.venv/
+__pycache__/
+.pytest_cache/
+*.pyc
+_ref_*.png
+capture_shots.py
+recapture_all.py
+prep_images.py
+screenshots/_code.html
+screenshots/_pdfcheck/

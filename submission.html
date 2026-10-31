@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Sheep Compendium — TDD Activity</title>
+<style>
+  @page { size: letter; margin: 0.7in; }
+  body {
+    font-family: Georgia, "Times New Roman", serif;
+    color: #1c1c1c;
+    line-height: 1.45;
+    max-width: 7.5in;
+    margin: 0 auto;
+    font-size: 12pt;
+  }
+  h1 { font-size: 22pt; margin-bottom: 0.1in; line-height: 1.2; }
+  h2 { font-size: 16pt; margin-top: 0.4in; border-bottom: 1px solid #ccc; padding-bottom: 0.05in; }
+  h3 { font-size: 13pt; margin-top: 0.28in; margin-bottom: 0.08in; }
+  p { margin: 0.12in 0; }
+  code, .path { font-family: Consolas, "Courier New", monospace; font-size: 10.5pt; }
+  figure { margin: 0.16in 0 0.22in; }
+  figcaption { font-family: Calibri, Arial, sans-serif; font-size: 10pt; color: #333; margin-top: 0.06in; }
+  img { width: 100%; height: auto; border: 1px solid #ddd; }
+  ul { margin-top: 0.08in; }
+  .meta { font-family: Calibri, Arial, sans-serif; color: #333; }
+  a { color: #0b3d91; }
+</style>
+</head>
+<body>
+
+<h1>Sheep Compendium</h1>
+<p class="meta">Test-driven development activity &nbsp;·&nbsp; FastAPI and pytest</p>
+<p class="meta">GitHub: <a href="https://github.com/reay0110/sheep_compendium">https://github.com/reay0110/sheep_compendium</a></p>
+
+<p>This project is a small farmer’s inventory of sheep. Each sheep has an id, name, breed, and sex. The tests were written with pytest and FastAPI’s TestClient, and the routes were filled in so those tests would pass. The flock is stored in a Python dictionary, not a SQL database, which is what the lab uses so the work stays on the tests and the endpoints.</p>
+
+<h2>1. Adding a sheep — completed test</h2>
+<p>The new sheep is Marigold, the Suffolk ewe from the handout. The lab note says to send the body with <code>json=sheep_data_name</code>, so the dictionary uses that name. The test posts to <code>/sheep/</code>, expects status 201, checks that the JSON body matches what was sent, and then reads the same id back to prove the record was stored.</p>
+<figure>
+  <img src="screenshots/code_test_add_sheep.png" alt="Completed test_add_sheep function">
+  <figcaption>Figure 1. <span class="path">tests/test_main.py</span> — <span class="path">test_add_sheep</span></figcaption>
+</figure>
+
+<h2>2. The test fails before the route exists</h2>
+<p>Following the lab, this test was run before <code>POST /sheep/</code> was added. Reading Spice still passed, because that route was already in place. Adding Marigold failed: the server answered 404, and the test expected 201.</p>
+<figure>
+  <img src="screenshots/pytest_fail.png" alt="Pytest output showing test_add_sheep failed with 404">
+  <figcaption>Figure 2. pytest before the add endpoint: 1 failed, 1 passed. <span class="path">assert 404 == 201</span></figcaption>
+</figure>
+
+<h2>3. The add endpoint</h2>
+<p><span class="path">models/models.py</span> defines a Pydantic <span class="path">Sheep</span> model with id, name, breed, and sex. <span class="path">models/db.py</span> keeps those records in <span class="path">FakeDB.data</span>. <span class="path">add_sheep</span> refuses a duplicate id by raising <span class="path">ValueError</span>. The route in <span class="path">main.py</span> does the same check and returns HTTP 400 instead, then stores the sheep and responds with 201. That is the status the test asserts.</p>
+<figure>
+  <img src="screenshots/code_main.png" alt="FastAPI routes in main.py">
+  <figcaption>Figure 3. <span class="path">main.py</span> after the required route and the extra-credit routes</figcaption>
+</figure>
+<p>With the route in place, the same two tests pass.</p>
+<figure>
+  <img src="screenshots/pytest_pass.png" alt="Pytest output showing both required tests passed">
+  <figcaption>Figure 4. pytest after <span class="path">POST /sheep/</span> was added: 2 passed</figcaption>
+</figure>
+
+<h2>4. Swagger UI</h2>
+<p>The app was started with <span class="path">uvicorn main:app</span>. Port 8000 was already taken by another local project, so this server used <span class="path">http://127.0.0.1:8001/docs</span>. The screenshots below are from that page’s Try it out panel.</p>
+<figure>
+  <img src="screenshots/swagger_overview.png" alt="Swagger UI listing the sheep routes">
+  <figcaption>Figure 5. The five routes: list, add, read one, update, and delete</figcaption>
+</figure>
+<figure>
+  <img src="screenshots/swagger_get_spice.png" alt="GET sheep 1 returning Spice">
+  <figcaption>Figure 6. GET /sheep/1 returns Spice, the Gotland ewe, with status 200</figcaption>
+</figure>
+<figure>
+  <img src="screenshots/swagger_post_marigold.png" alt="POST creating Marigold with status 201">
+  <figcaption>Figure 7. POST /sheep/ creates Marigold and returns 201</figcaption>
+</figure>
+
+<h2>5. Extra credit</h2>
+<p><span class="path">update_sheep</span> takes the id and the new Sheep record separately. <span class="path">add_sheep</span> only takes a Sheep and uses <span class="path">sheep.id</span> as the key. A missing id becomes a 404. Delete removes the record and returns it. List returns every value in the dictionary.</p>
+
+<h3>Read all sheep</h3>
+<p>The test asks for <span class="path">GET /sheep/</span>, checks that the body is a list, and checks that the original six ids are present, including Spice’s record. It does not require an exact length, so it still passes after another test has added a sheep.</p>
+<figure>
+  <img src="screenshots/code_test_read_all.png" alt="test_read_all_sheep">
+  <figcaption>Figure 8. <span class="path">test_read_all_sheep</span></figcaption>
+</figure>
+<figure>
+  <img src="screenshots/swagger_get_all.png" alt="GET all sheep including Marigold">
+  <figcaption>Figure 9. GET /sheep/ after Marigold was added. Rommy’s sex is ram here because the update in Figure 11 had already been sent.</figcaption>
+</figure>
+
+<h3>Update a sheep</h3>
+<p>Blondie’s seeded record is a ram. The test changes that sex to ewe and reads the id again to confirm the write. In Swagger, the same route was used on Rommy, changing the seeded ewe record to a ram.</p>
+<figure>
+  <img src="screenshots/code_test_update.png" alt="test_update_sheep">
+  <figcaption>Figure 10. <span class="path">test_update_sheep</span></figcaption>
+</figure>
+<figure>
+  <img src="screenshots/swagger_put_rommy.png" alt="PUT updating Rommy">
+  <figcaption>Figure 11. PUT /sheep/4 updates Rommy and returns 200</figcaption>
+</figure>
+
+<h3>Delete a sheep</h3>
+<p>Button is the Babydoll from the handout. The test creates him, deletes him, and checks that a later GET returns 404. The read route returns 404 when <span class="path">get_sheep</span> finds nothing, which is what makes that last assert possible. Swagger shows the same delete for Marigold.</p>
+<figure>
+  <img src="screenshots/code_test_delete.png" alt="test_delete_sheep">
+  <figcaption>Figure 12. <span class="path">test_delete_sheep</span></figcaption>
+</figure>
+<figure>
+  <img src="screenshots/swagger_delete_marigold.png" alt="DELETE removing Marigold">
+  <figcaption>Figure 13. DELETE /sheep/7 removes Marigold and returns the deleted record</figcaption>
+</figure>
+
+<h3>Full suite</h3>
+<p>The extra tests cover a duplicate add (400), a missing update (404), and a missing delete (404), along with the three new routes. All eight tests pass.</p>
+<figure>
+  <img src="screenshots/pytest_all.png" alt="Pytest output showing 8 passed">
+  <figcaption>Figure 14. Full pytest run: 8 passed</figcaption>
+</figure>
+
+<h2>How to run it</h2>
+<p>From the project folder:</p>
+<p><code>python -m venv .venv</code><br>
+<code>.venv\Scripts\python -m pip install -r requirements.txt</code><br>
+<code>.venv\Scripts\python -m pytest</code><br>
+<code>.venv\Scripts\python -m uvicorn main:app --reload</code></p>
+<p>Then open <span class="path">http://127.0.0.1:8000/docs</span>.</p>
+
+</body>
+</html>
